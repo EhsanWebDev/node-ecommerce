@@ -33,15 +33,15 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
-    age: {
+    about: {
+      type: String,
+      trim: true,
+    },
+    role: {
       type: Number,
       default: 0,
-      validate(age) {
-        if (age < 0) {
-          throw new Error("Age must be a positive number");
-        }
-      },
     },
+    history: { type: Array, default: [] },
     tokens: [
       {
         token: {

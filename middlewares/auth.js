@@ -12,10 +12,18 @@ const auth = async (req, res, next) => {
     }
     req.token = token;
     req.user = user;
+
     next();
   } catch (error) {
     res.status(401).send({ error: "Please Authenticate" });
   }
 };
 
-module.exports = auth;
+const isAdmin = (req, res, next) => {
+  if (req.user.role === 0) {
+    return res.status(403).send({ error: "Admin resource. Access denied !" });
+  }
+  next();
+};
+
+module.exports = { auth, isAdmin };

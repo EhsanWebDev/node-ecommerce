@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-const auth = require("../middlewares/auth");
+const { auth, isAdmin } = require("../middlewares/auth");
 
-router.get("/", (req, res) => {
+router.get("/", auth, isAdmin, (req, res) => {
   res.send("Hello World !");
 });
 router.post("/users/signup", async (req, res) => {
@@ -11,9 +11,13 @@ router.post("/users/signup", async (req, res) => {
   try {
     await user.save();
     const token = await user.generateAuthToken();
+    res.cookie("token", token, { expire: new Date() + 9999 });
     res.status(201).send({ user, token });
   } catch (error) {
-    res.status(400).send(error);
+    if (error.code === 11000) {
+      return res.status(400).send({ error: "This email is already taken" });
+    }
+    res.status(400).send({ error });
   }
 });
 router.post("/users/login", async (req, res) => {
@@ -23,6 +27,8 @@ router.post("/users/login", async (req, res) => {
       req.body.password
     );
     const token = await user.generateAuthToken();
+
+    res.cookie("token", token, { expire: new Date() + 9999 });
 
     res.status(200).send({ user, token });
   } catch (error) {
@@ -56,6 +62,7 @@ router.post("/users/logout", auth, async (req, res) => {
       return token.token !== req.token;
     });
     await req.user.save();
+    res.clearCookie("token");
     res.send("Logged out");
   } catch (error) {
     res.status(500).send();
@@ -65,6 +72,7 @@ router.post("/users/logoutAll", auth, async (req, res) => {
   try {
     req.user.tokens = [];
     await req.user.save();
+    res.clearCookie("token");
     res.send("Logged out of all devices");
   } catch (error) {
     res.status(500).send();
